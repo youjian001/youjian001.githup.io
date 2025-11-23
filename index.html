@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二手设备全生命周期盘活案例交互演示</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0b1120; /* 深色背景 */
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        /* 容器：放底图 */
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('map_bg.jpg'); /* 您的第一张底图 */
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* === 修改重点：长方形按钮样式 === */
+        .hotspot {
+            position: absolute;
+            
+            /* 1. 这里设置长方形的尺寸 */
+            width: 40px;   /* 宽度 */
+            height: 40px;  /* 高度 */
+            
+            /* 2. 这里设置圆角：50px是微圆角，0px是直角 */
+            border-radius: 50px; 
+            
+            /* 3. 居中对齐：让坐标点位于长方形的中心，而不是左上角 */
+            transform: translate(-50%, -50%);
+
+            background-color: rgba(255, 165, 0, 0.6); /* 橙色半透明 */
+            border: 1px solid #fff; /* 白色边框 */
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            
+            /* 呼吸灯发光效果 */
+            box-shadow: 0 0 15px rgba(255, 165, 0, 1);
+            animation: pulse 2s infinite;
+        }
+
+        /* 鼠标悬停时的效果 */
+        .hotspot:hover {
+            background-color: rgba(255, 255, 255, 0.9); /* 变白 */
+            border-color: #00f0ff; /* 边框变蓝 */
+            /* 放大时保持居中 */
+            transform: translate(-50%, -50%) scale(1.1); 
+        }
+
+        /* 呼吸动画 */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 165, 0, 0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 165, 0, 0); }
+        }
+
+        /* === 提示文字 (Tooltip) === */
+        .tooltip {
+            position: absolute;
+            bottom: 150%; /* 文字在按钮上方 */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 15, 30, 0.9);
+            color: #00f0ff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            border: 1px solid #00f0ff;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+            font-weight: bold;
+        }
+
+        .hotspot:hover .tooltip {
+            opacity: 1;
+            bottom: 130%;
+        }
+
+        /* === 弹窗模态框样式 === */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        #modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        #modal-img {
+            max-width: 90%;
+            max-height: 85%;
+            box-shadow: 0 0 30px rgba(0, 204, 255, 0.3);
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+
+        #close-btn {
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: transparent;
+            border: 1px solid #00f0ff;
+            color: #00f0ff;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        #close-btn:hover {
+            background: #00f0ff;
+            color: #000;
+        }
+
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            font-size: 50px;
+            color: rgba(255,255,255,0.3);
+            cursor: pointer;
+            user-select: none;
+            padding: 20px;
+            transition: color 0.3s;
+        }
+        .nav-arrow:hover { color: #00f0ff; }
+        #prev-btn { left: 30px; }
+        #next-btn { right: 30px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        <!-- 
+            按钮位置配置区域
+            提示：因为加了居中代码，现在位置更准了。
+        -->
+        
+        <!-- 1. 新设备 -->
+        <div class="hotspot" style="top: 42%; left: 35%;" onclick="openModal(1)">
+            <div class="tooltip">1. 新设备 (2011)</div>
+        </div>
+
+        <!-- 2. 使用三年 -->
+        <div class="hotspot" style="top: 63%; left: 36%;" onclick="openModal(2)">
+            <div class="tooltip">2. 河南焦煤使用 (2012-2014)</div>
+        </div>
+
+        <!-- 3. 闲置 -->
+        <div class="hotspot" style="top: 72%; left: 18%;" onclick="openModal(3)">
+            <div class="tooltip">3. 仓库闲置 (2015)</div>
+        </div>
+
+        <!-- 4. 维修再制造 -->
+        <div class="hotspot" style="top: 83%; left: 39%;" onclick="openModal(4)">
+            <div class="tooltip">4. 第一次盘活/维修 (2017)</div>
+        </div>
+
+        <!-- 5. 租赁使用 -->
+        <div class="hotspot" style="top: 82%; left: 58%;" onclick="openModal(5)">
+            <div class="tooltip">5. 宏景塔煤矿租赁 (2017-2019)</div>
+        </div>
+
+        <!-- 6. 代储代销 -->
+        <div class="hotspot" style="top: 62%; left: 76%;" onclick="openModal(6)">
+            <div class="tooltip">6. 易装备集散地 (2020)</div>
+        </div>
+
+        <!-- 7. 维修再制造 -->
+        <div class="hotspot" style="top: 50%; left: 87%;" onclick="openModal(7)">
+            <div class="tooltip">7. 第二次盘活/技改 (2022)</div>
+        </div>
+
+        <!-- 8. 出售使用 -->
+        <div class="hotspot" style="top: 35%; left: 80%;" onclick="openModal(8)">
+            <div class="tooltip">8. 河西煤矿出售 (2023)</div>
+        </div>
+
+        <!-- 9. 维修再制造 -->
+        <div class="hotspot" style="top: 31%; left: 68%;" onclick="openModal(9)">
+            <div class="tooltip">9. 第三次盘活/补套 (2025)</div>
+        </div>
+
+        <!-- 10. 出售使用 -->
+        <div class="hotspot" style="top: 26.5%; left: 57%;" onclick="openModal(10)">
+            <div class="tooltip">10. 塔拉壕煤矿 (2026)</div>
+        </div>
+
+        <!-- 11. 拆解分拣 -->
+        <div class="hotspot" style="top: 26%; left: 42%;" onclick="openModal(11)">
+            <div class="tooltip">11. 循环资源中心 (2029)</div>
+        </div>
+    </div>
+
+    <!-- 弹窗功能保持不变 -->
+    <div id="modal">
+        <div class="nav-arrow" id="prev-btn" onclick="prevSlide()">&#10094;</div>
+        <img id="modal-img" src="" alt="Detail Slide">
+        <div class="nav-arrow" id="next-btn" onclick="nextSlide()">&#10095;</div>
+        <button id="close-btn" onclick="closeModal()">返回全景图</button>
+    </div>
+
+    <script>
+        let currentSlideIndex = 0;
+        const totalSlides = 11;
+
+        function openModal(index) {
+            currentSlideIndex = index;
+            const modal = document.getElementById('modal');
+            const img = document.getElementById('modal-img');
+            img.src = `slide_${index}.jpg`; 
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+            setTimeout(() => { document.getElementById('modal-img').src = ""; }, 400);
+        }
+
+        function prevSlide() {
+            if (currentSlideIndex > 1) {
+                openModal(currentSlideIndex - 1);
+            } else {
+                openModal(totalSlides);
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlideIndex < totalSlides) {
+                openModal(currentSlideIndex + 1);
+            } else {
+                openModal(1);
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('modal').classList.contains('active')) {
+                if (e.key === 'Escape') closeModal();
+                if (e.key === 'ArrowLeft') prevSlide();
+                if (e.key === 'ArrowRight') nextSlide();
+            }
+        });
+    </script>
+</body>
+</html>
